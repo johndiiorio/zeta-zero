@@ -19,6 +19,6 @@ fn main() {
     println!("After {} iterations, average ply per game is {}", high, sum / high);
     println!("Total seconds: {}", start.to(end));
 
-    let g = mcts::create_mcts_graph("hello".to_string());
-
+    let (g, root_index) = mcts::create_mcts_graph("hello".to_string());
+    println!("{:?}", mcts::find_node_maximizing_bound(&g, root_index));
 }

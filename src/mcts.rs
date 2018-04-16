@@ -1,23 +1,36 @@
 use petgraph::{Graph, Direction};
 use petgraph::graph::NodeIndex;
 use petgraph::Directed;
+use chess::{Board};
 use std::ops::Index;
 use std::f64;
+use chess_utils::{State, get_legal_actions, is_terminal};
 
-pub struct Node {
+struct Node {
     num_visited: i32,
     value: i32,
-    fen: String,
+    state: State,
 }
 
-pub fn create_mcts_graph(fen: String) -> (Graph<Node, u32, Directed>, NodeIndex) {
+struct BestNodeIndex {
+    node_index: NodeIndex,
+    in_tree: bool,
+    terminal: bool
+}
+
+pub fn run_mcts(state: State) {
+    let (g, root_index) = create_mcts_graph(state);
+    let best_node_index = find_node_maximizing_bound(&g, root_index);
+}
+
+fn create_mcts_graph(state: State) -> (Graph<Node, u32, Directed>, NodeIndex) {
     let mut g = Graph::<Node, u32, Directed>::new();
-    let index = add_new_node(&mut g, None, fen);
+    let index = add_new_node(&mut g, None, state);
     (g, index)
 }
 
-pub fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, fen: String) -> NodeIndex {
-    let index = g.add_node(Node {num_visited: 1, value: 0, fen });
+fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, state: State) -> NodeIndex {
+    let index = g.add_node(Node {num_visited: 1, value: 0, state });
     match parent {
         None => {},
         Some(e) => {
@@ -28,10 +41,23 @@ pub fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex
 }
 
 // TODO use value from neural net in equation
-pub fn find_node_maximizing_bound(g: &Graph<Node, u32, Directed>, node_index: NodeIndex) -> NodeIndex {
+fn find_node_maximizing_bound(g: &Graph<Node, u32, Directed>, node_index: NodeIndex) -> BestNodeIndex {
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
-    if children_indexes.len() == 0 {
-        return node_index
+    let legal_actions = get_legal_actions(g.index(node_index).state);
+
+    if children_indexes.len() == 0 && legal_actions.len() == 0 { // Terminal node
+        return BestNodeIndex {
+            node_index,
+            in_tree: false,
+            terminal: true
+        }
+    }
+    if children_indexes.len() == 0 { // Choose first node from legal_actions
+        return BestNodeIndex {
+            node_index: legal_actions[0],
+            in_tree: false,
+            terminal: false
+        }
     }
 
     let mut max_value = 0 as f64;

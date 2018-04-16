@@ -1,12 +1,19 @@
-use rand::{thread_rng, Rng};
 use chess::{MoveGen, Board, BoardStatus, Piece};
 
 pub struct State {
     state: Board
 }
 
-pub fn get_legal_actions(state: State) -> Vec<State> {
-    return MoveGen::new(state.state, true).collect();
+pub fn get_legal_states(state: State) -> Vec<State> {
+    let mut states: Vec<State> = Vec::new();
+    let move_gen_iter: MoveGen = MoveGen::new(state.state, true);
+    for chess_move in move_gen_iter {
+        let board = state.state.clone();
+        states.push(State {
+            state: board.make_move(chess_move)
+        });
+    }
+    states
 }
 
 pub fn is_terminal(state: State) -> bool {

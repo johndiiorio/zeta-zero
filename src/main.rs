@@ -1,6 +1,5 @@
 extern crate time;
 extern crate chess;
-extern crate rand;
 extern crate petgraph;
 
 mod chess_utils;

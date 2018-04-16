@@ -5,6 +5,5 @@ authors = ["John DiIorio <johnzdiiorio@gmail.com>"]
 
 [dependencies]
 chess = "0.4.2"
-rand = "0.4.2"
 time = "0.1.39"
 petgraph = "0.4.12"

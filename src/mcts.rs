@@ -1,10 +1,9 @@
 use petgraph::{Graph, Direction};
 use petgraph::graph::NodeIndex;
 use petgraph::Directed;
-use chess::{Board};
 use std::ops::Index;
 use std::f64;
-use chess_utils::{State, get_legal_actions, is_terminal};
+use chess_utils::{State, get_legal_states, is_terminal};
 
 struct Node {
     num_visited: i32,
@@ -43,18 +42,18 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
 // TODO use value from neural net in equation
 fn find_node_maximizing_bound(g: &Graph<Node, u32, Directed>, node_index: NodeIndex) -> BestNodeIndex {
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
-    let legal_actions = get_legal_actions(g.index(node_index).state);
+    let legal_states = get_legal_states(g.index(node_index).state);
 
-    if children_indexes.len() == 0 && legal_actions.len() == 0 { // Terminal node
+    if children_indexes.len() == 0 && legal_states.len() == 0 { // Terminal node
         return BestNodeIndex {
             node_index,
             in_tree: false,
             terminal: true
         }
     }
-    if children_indexes.len() == 0 { // Choose first node from legal_actions
+    if children_indexes.len() == 0 { // Choose first node from legal_states
         return BestNodeIndex {
-            node_index: legal_actions[0],
+            node_index: legal_states[0],
             in_tree: false,
             terminal: false
         }

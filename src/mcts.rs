@@ -2,6 +2,7 @@ use petgraph::{Graph, Direction};
 use petgraph::graph::NodeIndex;
 use petgraph::Directed;
 use std::ops::Index;
+use std::ops::IndexMut;
 use std::f64;
 use chess_utils::{State, get_legal_states, is_terminal};
 
@@ -17,8 +18,8 @@ struct MCTSData {
 }
 
 pub fn run_mcts(state: State) {
-    let (mut g, root_index) = create_mcts_graph(state);
-    let best_node_index = recurse_mcts(&mut g, root_index);
+    let (g, root_index) = create_mcts_graph(state);
+    let best_node_index = recurse_mcts(g, root_index);
 }
 
 fn create_mcts_graph(state: State) -> (Graph<Node, u32, Directed>, NodeIndex) {
@@ -39,9 +40,9 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
 }
 
 // TODO use value from neural net in equation and backpropagation
-fn recurse_mcts(g: &mut Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCTSData {
-    let current_node = g.index(node_index);
-    if is_terminal(current_node.state) {
+fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCTSData {
+    let mut current_node = g.index_mut(node_index);
+    if is_terminal(&mut current_node.state) {
         return MCTSData {
             value: current_node.value,
             terminal: true
@@ -70,7 +71,7 @@ fn recurse_mcts(g: &mut Graph<Node, u32, Directed>, node_index: NodeIndex) -> MC
     // All children indexes
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
     // States of the children of the current node in the tree
-    let children_states: Vec<State> = Vec::new();
+    let mut children_states: Vec<State> = Vec::new();
     for index in children_indexes {
         children_states.push(g.index(index).state);
     }
@@ -91,20 +92,17 @@ fn recurse_mcts(g: &mut Graph<Node, u32, Directed>, node_index: NodeIndex) -> MC
         }
     }
 
-    let mut mcts_data = MCTSData {
-        value: 0,
-        terminal: false
-    };
+    let mcts_data: MCTSData;
 
     // Check if best node was just added
     if added_nodes {
         if children_before_addition.contains(&best_node_index) {
-            mcts_data = recurse_mcts(&mut g, best_node_index);
+            mcts_data = recurse_mcts(g, best_node_index);
         } else {
             // don't recurse
         }
     } else {
-        mcts_data = recurse_mcts(&mut g, best_node_index);
+        mcts_data = recurse_mcts(g, best_node_index);
     }
     mcts_data
 }

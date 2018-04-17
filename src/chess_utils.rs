@@ -16,7 +16,7 @@ pub fn get_legal_states(state: State) -> Vec<State> {
     states
 }
 
-pub fn is_terminal(state: State) -> bool {
+pub fn is_terminal(state: &mut State) -> bool {
     state.state.status() != BoardStatus::Ongoing || game_drawn(state.state)
 }
 

@@ -18,8 +18,8 @@ struct BestNodeIndex {
 }
 
 pub fn run_mcts(state: State) {
-    let (g, root_index) = create_mcts_graph(state);
-    let best_node_index = find_node_maximizing_bound(&g, root_index);
+    let (mut g, root_index) = create_mcts_graph(state);
+    let best_node_index = recurse_mcts(&mut g, root_index);
 }
 
 fn create_mcts_graph(state: State) -> (Graph<Node, u32, Directed>, NodeIndex) {
@@ -29,7 +29,7 @@ fn create_mcts_graph(state: State) -> (Graph<Node, u32, Directed>, NodeIndex) {
 }
 
 fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, state: State) -> NodeIndex {
-    let index = g.add_node(Node {num_visited: 1, value: 0, state });
+    let index = g.add_node(Node {num_visited: 0, value: 0, state });
     match parent {
         None => {},
         Some(e) => {
@@ -39,41 +39,69 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
     index
 }
 
-// TODO use value from neural net in equation
-fn find_node_maximizing_bound(g: &Graph<Node, u32, Directed>, node_index: NodeIndex) -> BestNodeIndex {
-    let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
-    let legal_states = get_legal_states(g.index(node_index).state);
-
-    if children_indexes.len() == 0 && legal_states.len() == 0 { // Terminal node
+// TODO use value from neural net in equation and backpropagation
+fn recurse_mcts(g: &mut Graph<Node, u32, Directed>, node_index: NodeIndex) -> BestNodeIndex {
+    let current_node = g.index(node_index);
+    if is_terminal(current_node.state) {
         return BestNodeIndex {
             node_index,
-            in_tree: false,
+            in_tree: true,
             terminal: true
         }
     }
-    if children_indexes.len() == 0 { // Choose first node from legal_states
-        return BestNodeIndex {
-            node_index: legal_states[0],
-            in_tree: false,
-            terminal: false
+
+    // All possible states of the current node
+    let legal_states = get_legal_states(current_node.state);
+
+    // Nodes in tree before additions
+    let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
+    let mut added_nodes = false;
+
+    // If never visited node, add all possible states
+    // There should be no children of the current node
+    if current_node.num_visited == 0 {
+        assert_eq!(children_indexes.len() == 0);
+        added_nodes = true;
+        for legal_state in legal_states {
+            add_new_node(&mut g, node_index, legal_state)
         }
     }
 
-    let mut max_value = 0 as f64;
-    let mut best_node_index = children_indexes[0];
+    // Increment the number of times that the current node was visited
+    current_node.num_visited += 1;
 
+    // All children indexes
+    let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
+    // States of the children of the current node in the tree
+    let children_states: Vec<State> = Vec::new();
+    for index in children_indexes {
+        children_states.push(g.index(index).state);
+    }
+
+    // Calculate best node to visit
+    let mut max_value = -1 as f64;
+    let mut best_node_index = children_indexes[0];
     let mut total_children_visits = 0;
-    for _ in &children_indexes {
-        total_children_visits += g.index(node_index).num_visited;
+    for i in &children_indexes {
+        total_children_visits += g.index(i).num_visited;
     }
     for child_index in children_indexes {
-        let node = g.index(node_index);
-        let value = (node.value / node.num_visited) as f64 +
+        let value = (current_node.value / current_node.num_visited) as f64 +
             (2 as f64).sqrt() * (total_children_visits as f64).sqrt() / (1 + g.index(child_index).num_visited) as f64;
         if value > max_value {
             max_value = value;
             best_node_index = child_index;
         }
     }
-    best_node_index
+
+    // Check if best node was just added
+    if added_nodes {
+        if children_before_addition.contains(best_node_index) {
+            // recurse
+        } else {
+            // don't recurse
+        }
+    } else {
+        // always recurse
+    }
 }

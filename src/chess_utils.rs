@@ -1,16 +1,16 @@
 use chess::{MoveGen, Board, BoardStatus, Piece};
 
-pub struct State {
+pub struct NodeState {
     state: Board
 }
 
-impl GameState for State {
+impl State for NodeState {
     fn get_legal_states(&self) -> Vec<Self> {
-        let mut states: Vec<State> = Vec::new();
+        let mut states: Vec<NodeState> = Vec::new();
         let move_gen_iter: MoveGen = MoveGen::new(self.state, true);
         for chess_move in move_gen_iter {
             let board = self.state.clone();
-            states.push(State {
+            states.push(NodeState {
                 state: board.make_move(chess_move)
             });
         }
@@ -22,7 +22,7 @@ impl GameState for State {
     }
 }
 
-pub trait GameState: Sized {
+pub trait State: Sized {
     fn get_legal_states(&self) -> Vec<Self>;
     fn is_terminal(&self) -> bool;
 }

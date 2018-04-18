@@ -4,12 +4,12 @@ use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::f64;
-use chess_utils::{State, GameState};
+use chess_utils::{NodeState, State};
 
 struct Node {
     num_visited: i32,
     value: i32,
-    state: State,
+    state: NodeState,
 }
 
 struct MCTSData {
@@ -17,18 +17,18 @@ struct MCTSData {
     terminal: bool
 }
 
-pub fn run_mcts(state: State) {
+pub fn run_mcts(state: NodeState) {
     let (g, root_index) = create_mcts_graph(state);
     let best_node_index = recurse_mcts(g, root_index);
 }
 
-fn create_mcts_graph(state: State) -> (Graph<Node, u32, Directed>, NodeIndex) {
+fn create_mcts_graph(state: NodeState) -> (Graph<Node, u32, Directed>, NodeIndex) {
     let mut g = Graph::<Node, u32, Directed>::new();
     let index = add_new_node(&mut g, None, state);
     (g, index)
 }
 
-fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, state: State) -> NodeIndex {
+fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, state: NodeState) -> NodeIndex {
     let index = g.add_node(Node {num_visited: 0, value: 0, state });
     match parent {
         None => {},

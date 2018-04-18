@@ -4,7 +4,7 @@ pub struct State {
     state: Board
 }
 
-pub fn get_legal_states(state: State) -> Vec<State> {
+pub fn get_legal_states(state: &State) -> Vec<State> {
     let mut states: Vec<State> = Vec::new();
     let move_gen_iter: MoveGen = MoveGen::new(state.state, true);
     for chess_move in move_gen_iter {
@@ -16,7 +16,7 @@ pub fn get_legal_states(state: State) -> Vec<State> {
     states
 }
 
-pub fn is_terminal(state: &mut State) -> bool {
+pub fn is_terminal(state: &State) -> bool {
     state.state.status() != BoardStatus::Ongoing || game_drawn(state.state)
 }
 

@@ -4,8 +4,7 @@ use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::f64;
-use chess_utils::{State, get_legal_states, is_terminal};
-
+use chess_utils::{State, GameState};
 
 struct Node {
     num_visited: i32,
@@ -42,32 +41,40 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
 
 // TODO use value from neural net in equation and backpropagation
 fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCTSData {
-    let current_node = g.index_mut(node_index);
-    if is_terminal(&current_node.state) {
-        return MCTSData {
-            value: current_node.value,
-            terminal: true
-        }
-    }
-
-    // All possible states of the current node
-    let legal_states = get_legal_states(&current_node.state);
-
     // Nodes in tree before additions
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
     let mut added_nodes = false;
+    {
+        let current_node = g.index_mut(node_index);
+        if current_node.state.is_terminal() {
+            return MCTSData {
+                value: current_node.value,
+                terminal: true
+            }
+        }
 
-    // If never visited node, add all possible states
+
+        // Increment the number of times that the current node was visited
+        current_node.num_visited += 1;
+    }
+
+    let legal_states;
+    let do_add =
+    {
+        let current_node = g.index(node_index);
+        // All possible states of the current node
+        legal_states = current_node.state.get_legal_states();
+        current_node.num_visited == 1
+    };
+
+    // If just visited now, add all possible states
     // There should be no children of the current node
-    if current_node.num_visited == 0 {
+    if do_add {
         added_nodes = true;
         for legal_state in legal_states {
             add_new_node(&mut g, Some(node_index), legal_state);
         }
     }
-
-    // Increment the number of times that the current node was visited
-    current_node.num_visited += 1;
 
     // All children indexes
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
@@ -79,15 +86,18 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
     for i in children_indexes.clone() {
         total_children_visits += g.index(i).num_visited;
     }
-    for child_index in children_indexes {
-        let value = (current_node.value / current_node.num_visited) as f64 +
-            (2 as f64).sqrt() * (total_children_visits as f64).sqrt() / (1 + g.index(child_index).num_visited) as f64;
-        if value > max_value {
-            max_value = value;
-            best_node_index = child_index;
+
+    {
+        let current_node = g.index(node_index);
+        for child_index in children_indexes {
+            let value = (current_node.value / current_node.num_visited) as f64 +
+                (2 as f64).sqrt() * (total_children_visits as f64).sqrt() / (1 + g.index(child_index).num_visited) as f64;
+            if value > max_value {
+                max_value = value;
+                best_node_index = child_index;
+            }
         }
     }
-
     let mcts_data: MCTSData;
 
     // Check if best node was just added

@@ -4,20 +4,27 @@ pub struct State {
     state: Board
 }
 
-pub fn get_legal_states(state: &State) -> Vec<State> {
-    let mut states: Vec<State> = Vec::new();
-    let move_gen_iter: MoveGen = MoveGen::new(state.state, true);
-    for chess_move in move_gen_iter {
-        let board = state.state.clone();
-        states.push(State {
-            state: board.make_move(chess_move)
-        });
+impl GameState for State {
+    fn get_legal_states(&self) -> Vec<Self> {
+        let mut states: Vec<State> = Vec::new();
+        let move_gen_iter: MoveGen = MoveGen::new(self.state, true);
+        for chess_move in move_gen_iter {
+            let board = self.state.clone();
+            states.push(State {
+                state: board.make_move(chess_move)
+            });
+        }
+        states
     }
-    states
+
+    fn is_terminal(&self) -> bool {
+        self.state.status() != BoardStatus::Ongoing || game_drawn(self.state)
+    }
 }
 
-pub fn is_terminal(state: &State) -> bool {
-    state.state.status() != BoardStatus::Ongoing || game_drawn(state.state)
+pub trait GameState: Sized {
+    fn get_legal_states(&self) -> Vec<Self>;
+    fn is_terminal(&self) -> bool;
 }
 
 fn game_drawn(board: Board) -> bool {

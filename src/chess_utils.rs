@@ -1,17 +1,9 @@
 use chess::{MoveGen, Board, BoardStatus, Piece, Color};
+use allowable::{State, Terminal};
 
+// TODO generalize
 pub struct NodeState {
     state: Board
-}
-
-pub struct Terminal {
-    pub is_terminal: bool,
-    pub value: Option<i32>
-}
-
-pub trait State: Sized {
-    fn get_legal_states(&self) -> Vec<Self>;
-    fn is_terminal(&self) -> Terminal;
 }
 
 impl State for NodeState {

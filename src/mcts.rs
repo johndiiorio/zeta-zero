@@ -3,7 +3,8 @@ use petgraph::graph::NodeIndex;
 use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
-use chess_utils::{NodeState, State};
+use chess_utils::{NodeState};
+use allowable::State;
 
 struct Node {
     num_visited: i32,

@@ -1,7 +1,17 @@
-use chess::{MoveGen, Board, BoardStatus, Piece};
+use chess::{MoveGen, Board, BoardStatus, Piece, Color};
 
 pub struct NodeState {
     state: Board
+}
+
+pub struct Terminal {
+    pub is_terminal: bool,
+    pub value: Option<i32>
+}
+
+pub trait State: Sized {
+    fn get_legal_states(&self) -> Vec<Self>;
+    fn is_terminal(&self) -> Terminal;
 }
 
 impl State for NodeState {
@@ -17,15 +27,35 @@ impl State for NodeState {
         states
     }
 
-    fn is_terminal(&self) -> bool {
-        self.state.status() != BoardStatus::Ongoing || game_drawn(self.state)
+    fn is_terminal(&self) -> Terminal {
+        let status = self.state.status();
+        let is_drawn = status == BoardStatus::Stalemate || game_drawn(self.state);
+
+        if status == BoardStatus::Ongoing && !is_drawn {
+            return Terminal {
+                is_terminal: false,
+                value: None
+            }
+        }
+
+        // TODO check that this isn't Color::White
+        let white_to_move = self.state.side_to_move() == Color::Black;
+        let mut value;
+        if is_drawn {
+            value = 0;
+        } else if white_to_move {
+            value = 1;
+        } else {
+            value = -1;
+        }
+
+        Terminal {
+            is_terminal: true,
+            value: Some(value)
+        }
     }
 }
 
-pub trait State: Sized {
-    fn get_legal_states(&self) -> Vec<Self>;
-    fn is_terminal(&self) -> bool;
-}
 
 fn game_drawn(board: Board) -> bool {
     let pawn_moves = board.pieces(Piece::Pawn).popcnt();

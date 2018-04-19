@@ -18,7 +18,6 @@ struct NeuralNetworkData {
 
 struct MCTSData {
     value: i32,
-    terminal: bool
 }
 
 pub fn run_mcts(state: NodeState) {
@@ -53,10 +52,10 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
         if current_node.num_visited == 1 {
             should_add_nodes = true;
         }
-        if current_node.state.is_terminal() {
+        let terminal_data = current_node.state.is_terminal();
+        if terminal_data.is_terminal {
             return MCTSData {
-                value: current_node.value,
-                terminal: true
+                value: terminal_data.value.unwrap(),
             }
         }
 
@@ -64,8 +63,7 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
         current_node.num_visited += 1;
     }
 
-    // If just visited now, add all possible states
-    // There should be no children of the current node
+    // If just visited now, add all possible states (should be no children of the current node)
     let legal_states;
     if should_add_nodes {
         {
@@ -110,7 +108,7 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
         if children_before_addition.contains(&best_node_index) {
             return recurse_mcts(g, best_node_index);
         } else {
-            // don't recurse
+            // Leaf node, don't recurse, backpropagate values
 //            let current_node = g.index(node_index);
             return recurse_mcts(g, best_node_index);
 

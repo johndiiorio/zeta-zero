@@ -17,9 +17,10 @@ struct NeuralNetworkData {
     policy: Vec<u32>
 }
 
+#[derive(Clone)]
 struct MCTSData {
     value: i32,
-    policy: Vec<u32>
+    policy: Vec<u32>,
 }
 
 pub fn run_mcts<T: State>(state: T) {
@@ -111,21 +112,32 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
         }
     }
 
+    // Data returned from children nodes in the tree
+    let mcts_data;
+
     // Check if best node was just added
     if should_add_nodes {
         if children_before_addition.contains(&best_node_index) {
-            return recurse_mcts(g, best_node_index);
+            mcts_data = recurse_mcts(g, best_node_index);
         } else {
             // Leaf node, don't recurse, backpropagate values
             return MCTSData {
                 value: nn_data.value,
                 policy: nn_data.policy
             };
-
         }
     } else {
-        return recurse_mcts(g, best_node_index);
+        mcts_data = recurse_mcts(g, best_node_index);
     }
+
+
+    // Modify the tree on the way back up the stack
+    let cloned_mcts_data = mcts_data.clone();
+    let current_node = g.index_mut(node_index);
+    current_node.value += cloned_mcts_data.value;
+    current_node.policy = cloned_mcts_data.policy;
+
+    mcts_data
 }
 
 fn calculate_selection_node_value<T: State>(current_node: &Node<T>, child_node: &Node<T>, total_children_visits: i32, policy_value: u32) -> f32 {

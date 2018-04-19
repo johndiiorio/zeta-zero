@@ -3,13 +3,12 @@ use petgraph::graph::NodeIndex;
 use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
-use chess_utils::{NodeState};
-use allowable::State;
+use allowable::{State};
 
-struct Node {
+struct Node<T> {
     num_visited: i32,
     value: i32,
-    state: NodeState,
+    state: T,
 }
 
 struct NeuralNetworkData {
@@ -21,18 +20,18 @@ struct MCTSData {
     value: i32,
 }
 
-pub fn run_mcts(state: NodeState) {
+pub fn run_mcts<T: State>(state: T) {
     let (g, root_index) = create_mcts_graph(state);
     let mcts_data = recurse_mcts(g, root_index);
 }
 
-fn create_mcts_graph(state: NodeState) -> (Graph<Node, u32, Directed>, NodeIndex) {
-    let mut g = Graph::<Node, u32, Directed>::new();
+fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, NodeIndex) {
+    let mut g = Graph::<Node<T>, u32, Directed>::new();
     let index = add_new_node(&mut g, None, state);
     (g, index)
 }
 
-fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, state: NodeState) -> NodeIndex {
+fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<NodeIndex>, state: T) -> NodeIndex {
     let index = g.add_node(Node {num_visited: 0, value: 0, state });
     match parent {
         None => {},
@@ -43,7 +42,7 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
     index
 }
 
-fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCTSData {
+fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> MCTSData {
     // Nodes in tree before additions
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
     let mut should_add_nodes = false;
@@ -119,7 +118,7 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
     }
 }
 
-fn calculate_selection_node_value(current_node: &Node, child_node: &Node, total_children_visits: i32, policy_value: u32) -> f32 {
+fn calculate_selection_node_value<T: State>(current_node: &Node<T>, child_node: &Node<T>, total_children_visits: i32, policy_value: u32) -> f32 {
     let exploitation = (current_node.value / current_node.num_visited) as f32;
     let c = (2 as f32).sqrt();
     let exploration = (total_children_visits as f32).sqrt() / (1 + child_node.num_visited) as f32;
@@ -127,7 +126,7 @@ fn calculate_selection_node_value(current_node: &Node, child_node: &Node, total_
 }
 
 // TODO hook this up with neural net
-fn predict(state: &NodeState) -> NeuralNetworkData {
+fn predict<T: State>(state: &T) -> NeuralNetworkData {
     NeuralNetworkData {
         value: 0,
         policy: Vec::new()

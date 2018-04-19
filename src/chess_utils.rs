@@ -1,27 +1,24 @@
 use chess::{MoveGen, Board, BoardStatus, Piece, Color};
 use allowable::{State, Terminal};
 
-// TODO generalize
-pub struct NodeState {
-    state: Board
+pub fn get_root_state() -> Board {
+    Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()
 }
 
-impl State for NodeState {
+impl State for Board {
     fn get_legal_states(&self) -> Vec<Self> {
-        let mut states: Vec<NodeState> = Vec::new();
-        let move_gen_iter: MoveGen = MoveGen::new(self.state, true);
+        let mut states: Vec<Board> = Vec::new();
+        let move_gen_iter: MoveGen = MoveGen::new(*self, true);
         for chess_move in move_gen_iter {
-            let board = self.state.clone();
-            states.push(NodeState {
-                state: board.make_move(chess_move)
-            });
+            let board = self.clone();
+            states.push(board.make_move(chess_move));
         }
         states
     }
 
     fn is_terminal(&self) -> Terminal {
-        let status = self.state.status();
-        let is_drawn = status == BoardStatus::Stalemate || game_drawn(self.state);
+        let status = self.status();
+        let is_drawn = status == BoardStatus::Stalemate || game_drawn(*self);
 
         if status == BoardStatus::Ongoing && !is_drawn {
             return Terminal {
@@ -31,8 +28,8 @@ impl State for NodeState {
         }
 
         // TODO check that this isn't Color::White
-        let white_to_move = self.state.side_to_move() == Color::Black;
-        let mut value;
+        let white_to_move = self.side_to_move() == Color::Black;
+        let value;
         if is_drawn {
             value = 0;
         } else if white_to_move {

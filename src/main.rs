@@ -10,6 +10,7 @@ use time::PreciseTime;
 
 fn main() {
     let start = PreciseTime::now();
+    mcts::run_mcts(chess_utils::get_root_state());
     let end = PreciseTime::now();
     println!("Total seconds: {}", start.to(end));
 }

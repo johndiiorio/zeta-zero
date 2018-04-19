@@ -3,13 +3,17 @@ use petgraph::graph::NodeIndex;
 use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
-use std::f64;
 use chess_utils::{NodeState, State};
 
 struct Node {
     num_visited: i32,
     value: i32,
     state: NodeState,
+}
+
+struct NeuralNetworkData {
+    value: i32,
+    policy: Vec<u32>
 }
 
 struct MCTSData {
@@ -19,7 +23,7 @@ struct MCTSData {
 
 pub fn run_mcts(state: NodeState) {
     let (g, root_index) = create_mcts_graph(state);
-    let best_node_index = recurse_mcts(g, root_index);
+    let mcts_data = recurse_mcts(g, root_index);
 }
 
 fn create_mcts_graph(state: NodeState) -> (Graph<Node, u32, Directed>, NodeIndex) {
@@ -43,9 +47,13 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
 fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCTSData {
     // Nodes in tree before additions
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
-    let mut added_nodes = false;
+    let mut should_add_nodes = false;
     {
+        // Return data if current node is terminal
         let current_node = g.index_mut(node_index);
+        if current_node.num_visited == 1 {
+            should_add_nodes = true;
+        }
         if current_node.state.is_terminal() {
             return MCTSData {
                 value: current_node.value,
@@ -53,24 +61,19 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
             }
         }
 
-
-        // Increment the number of times that the current node was visited
+        // Always increment the number of times that the current node was visited
         current_node.num_visited += 1;
     }
 
-    let legal_states;
-    let do_add =
-    {
-        let current_node = g.index(node_index);
-        // All possible states of the current node
-        legal_states = current_node.state.get_legal_states();
-        current_node.num_visited == 1
-    };
-
     // If just visited now, add all possible states
     // There should be no children of the current node
-    if do_add {
-        added_nodes = true;
+    let legal_states;
+    if should_add_nodes {
+        {
+            let current_node = g.index(node_index);
+            legal_states = current_node.state.get_legal_states();
+        }
+
         for legal_state in legal_states {
             add_new_node(&mut g, Some(node_index), legal_state);
         }
@@ -80,35 +83,50 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
 
     // Calculate best node to visit
-    let mut max_value = -1 as f64;
+    let mut max_value = -1 as f32;
     let mut best_node_index = children_indexes[0];
     let mut total_children_visits = 0;
     for i in children_indexes.clone() {
         total_children_visits += g.index(i).num_visited;
     }
-
     {
         let current_node = g.index(node_index);
+        let nn_data = predict(&current_node.state);
         for child_index in children_indexes {
-            let value = (current_node.value / current_node.num_visited) as f64 +
-                (2 as f64).sqrt() * (total_children_visits as f64).sqrt() / (1 + g.index(child_index).num_visited) as f64;
-            if value > max_value {
-                max_value = value;
+            let selection_node_value = calculate_selection_node_value(current_node, g.index(child_index), total_children_visits);
+            if selection_node_value > max_value {
+                max_value = selection_node_value;
                 best_node_index = child_index;
             }
         }
     }
-    let mcts_data: MCTSData;
 
     // Check if best node was just added
-    if added_nodes {
+    if should_add_nodes {
         if children_before_addition.contains(&best_node_index) {
-            mcts_data = recurse_mcts(g, best_node_index);
+            return recurse_mcts(g, best_node_index);
         } else {
             // don't recurse
+//            let current_node = g.index(node_index);
+            return recurse_mcts(g, best_node_index);
+
         }
     } else {
-        mcts_data = recurse_mcts(g, best_node_index);
+        return recurse_mcts(g, best_node_index);
     }
-    mcts_data
+}
+
+fn calculate_selection_node_value(current_node: &Node, child_node: &Node, total_children_visits: i32) -> f32 {
+    let exploitation = (current_node.value / current_node.num_visited) as f32;
+    let c = (2 as f32).sqrt();
+    let exploration = (total_children_visits as f32).sqrt() / (1 + child_node.num_visited) as f32;
+    exploitation + c * exploration
+}
+
+// TODO hook this up with neural net
+fn predict(state: &NodeState) -> NeuralNetworkData {
+    NeuralNetworkData {
+        value: 0,
+        policy: Vec::new()
+    }
 }

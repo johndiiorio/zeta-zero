@@ -43,7 +43,6 @@ fn add_new_node(g: &mut Graph<Node, u32, Directed>, parent: Option<NodeIndex>, s
     index
 }
 
-// TODO use value from neural net in equation and backpropagation
 fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCTSData {
     // Nodes in tree before additions
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
@@ -92,11 +91,16 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
     {
         let current_node = g.index(node_index);
         let nn_data = predict(&current_node.state);
-        for child_index in children_indexes {
-            let selection_node_value = calculate_selection_node_value(current_node, g.index(child_index), total_children_visits);
+        for (i, child_index) in children_indexes.iter().enumerate() {
+            let selection_node_value = calculate_selection_node_value(
+                current_node,
+                g.index(*child_index),
+                total_children_visits,
+                nn_data.policy[i]
+            );
             if selection_node_value > max_value {
                 max_value = selection_node_value;
-                best_node_index = child_index;
+                best_node_index = *child_index;
             }
         }
     }
@@ -116,11 +120,11 @@ fn recurse_mcts(mut g: Graph<Node, u32, Directed>, node_index: NodeIndex) -> MCT
     }
 }
 
-fn calculate_selection_node_value(current_node: &Node, child_node: &Node, total_children_visits: i32) -> f32 {
+fn calculate_selection_node_value(current_node: &Node, child_node: &Node, total_children_visits: i32, policy_value: u32) -> f32 {
     let exploitation = (current_node.value / current_node.num_visited) as f32;
     let c = (2 as f32).sqrt();
     let exploration = (total_children_visits as f32).sqrt() / (1 + child_node.num_visited) as f32;
-    exploitation + c * exploration
+    exploitation + c * (policy_value as f32) * exploration
 }
 
 // TODO hook this up with neural net

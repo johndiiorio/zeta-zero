@@ -9,22 +9,23 @@ struct Node<T> {
     num_visited: i32,
     value: i32,
     state: T,
-    policies: Vec<u32>
+    policy: Vec<u32>
 }
 
 struct NeuralNetworkData {
     value: i32,
-    policies: Vec<u32>
+    policy: Vec<u32>
 }
 
 struct MCTSData {
     value: i32,
-    policy: u32
+    policy: Vec<u32>
 }
 
 pub fn run_mcts<T: State>(state: T) {
     let (g, root_index) = create_mcts_graph(state);
     let mcts_data = recurse_mcts(g, root_index);
+    println!("Value: {}, policy {:?}", mcts_data.value, mcts_data.policy);
 }
 
 fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, NodeIndex) {
@@ -34,7 +35,7 @@ fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, Node
 }
 
 fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<NodeIndex>, state: T) -> NodeIndex {
-    let index = g.add_node(Node {state, num_visited: 0, value: 0, policies: Vec::new() });
+    let index = g.add_node(Node {state, num_visited: 0, value: 0, policy: Vec::new() });
     match parent {
         None => {},
         Some(e) => {
@@ -59,7 +60,7 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
         if terminal_data.is_terminal {
             return MCTSData {
                 value: terminal_value,
-                policy: normalize(terminal_value, -1, 1)
+                policy: vec![normalize(terminal_value, -1, 1)]
             }
         }
 
@@ -83,6 +84,9 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
     // All children indexes
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
 
+    // Neural network prediction
+    let nn_data;
+
     // Calculate best node to visit
     let mut max_value = -1 as f32;
     let mut best_node_index = children_indexes[0];
@@ -92,13 +96,13 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
     }
     {
         let current_node = g.index(node_index);
-        let nn_data = predict(&current_node.state);
+        nn_data = predict(&current_node.state);
         for (i, child_index) in children_indexes.iter().enumerate() {
             let selection_node_value = calculate_selection_node_value(
                 current_node,
                 g.index(*child_index),
                 total_children_visits,
-                nn_data.policies[i]
+                nn_data.policy[i]
             );
             if selection_node_value > max_value {
                 max_value = selection_node_value;
@@ -113,8 +117,10 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
             return recurse_mcts(g, best_node_index);
         } else {
             // Leaf node, don't recurse, backpropagate values
-//            let current_node = g.index(node_index);
-            return recurse_mcts(g, best_node_index);
+            return MCTSData {
+                value: nn_data.value,
+                policy: nn_data.policy
+            };
 
         }
     } else {
@@ -138,6 +144,6 @@ fn normalize(x: i32, min: i32, max: i32) -> u32 {
 fn predict<T: State>(state: &T) -> NeuralNetworkData {
     NeuralNetworkData {
         value: 0,
-        policies: Vec::new()
+        policy: Vec::new()
     }
 }

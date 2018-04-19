@@ -1,5 +1,5 @@
 use chess::{MoveGen, Board, BoardStatus, Piece, Color};
-use allowable::{State, Terminal};
+use traits::{State, Terminal};
 
 pub fn get_root_state() -> Board {
     Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()

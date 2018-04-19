@@ -3,21 +3,23 @@ use petgraph::graph::NodeIndex;
 use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
-use allowable::{State};
+use traits::{State};
 
 struct Node<T> {
     num_visited: i32,
     value: i32,
     state: T,
+    policies: Vec<u32>
 }
 
 struct NeuralNetworkData {
     value: i32,
-    policy: Vec<u32>
+    policies: Vec<u32>
 }
 
 struct MCTSData {
     value: i32,
+    policy: u32
 }
 
 pub fn run_mcts<T: State>(state: T) {
@@ -32,7 +34,7 @@ fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, Node
 }
 
 fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<NodeIndex>, state: T) -> NodeIndex {
-    let index = g.add_node(Node {num_visited: 0, value: 0, state });
+    let index = g.add_node(Node {state, num_visited: 0, value: 0, policies: Vec::new() });
     match parent {
         None => {},
         Some(e) => {
@@ -53,9 +55,11 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
             should_add_nodes = true;
         }
         let terminal_data = current_node.state.is_terminal();
+        let terminal_value = terminal_data.value.unwrap();
         if terminal_data.is_terminal {
             return MCTSData {
-                value: terminal_data.value.unwrap(),
+                value: terminal_value,
+                policy: normalize(terminal_value, -1, 1)
             }
         }
 
@@ -94,7 +98,7 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
                 current_node,
                 g.index(*child_index),
                 total_children_visits,
-                nn_data.policy[i]
+                nn_data.policies[i]
             );
             if selection_node_value > max_value {
                 max_value = selection_node_value;
@@ -125,10 +129,15 @@ fn calculate_selection_node_value<T: State>(current_node: &Node<T>, child_node: 
     exploitation + c * (policy_value as f32) * exploration
 }
 
+// Normalize value in range [min, max] to [0, 1]
+fn normalize(x: i32, min: i32, max: i32) -> u32 {
+    ((x - min) / (max - min)) as u32
+}
+
 // TODO hook this up with neural net
 fn predict<T: State>(state: &T) -> NeuralNetworkData {
     NeuralNetworkData {
         value: 0,
-        policy: Vec::new()
+        policies: Vec::new()
     }
 }

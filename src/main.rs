@@ -4,7 +4,7 @@ extern crate petgraph;
 
 mod chess_utils;
 mod mcts;
-mod allowable;
+mod traits;
 
 use time::PreciseTime;
 

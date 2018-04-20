@@ -24,8 +24,8 @@ struct MCTSData {
 }
 
 pub fn run_mcts<T: State>(state: T) {
-    let (g, root_index) = create_mcts_graph(state);
-    let mcts_data = recurse_mcts(g, root_index);
+    let (mut g, root_index) = create_mcts_graph(state);
+    let mcts_data = recurse_mcts(&mut g, root_index);
     println!("Value: {}, policy {:?}", mcts_data.value, mcts_data.policy);
 }
 
@@ -46,7 +46,7 @@ fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<
     index
 }
 
-fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> MCTSData {
+fn recurse_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> MCTSData {
     // Nodes in tree before additions
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
     let mut should_add_nodes = false;
@@ -118,7 +118,7 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
     // Check if best node was just added
     if should_add_nodes {
         if children_before_addition.contains(&best_node_index) {
-            mcts_data = recurse_mcts(g, best_node_index);
+            mcts_data = recurse_mcts(&mut g, best_node_index);
         } else {
             // Leaf node, don't recurse, backpropagate values
             return MCTSData {
@@ -127,7 +127,7 @@ fn recurse_mcts<T: State>(mut g: Graph<Node<T>, u32, Directed>, node_index: Node
             };
         }
     } else {
-        mcts_data = recurse_mcts(g, best_node_index);
+        mcts_data = recurse_mcts(&mut g, best_node_index);
     }
 
 

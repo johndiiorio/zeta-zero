@@ -53,12 +53,12 @@ fn recurse_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, node_index:
     {
         // Return data if current node is terminal
         let current_node = g.index_mut(node_index);
-        if current_node.num_visited == 1 {
+        if current_node.num_visited == 0 {
             should_add_nodes = true;
         }
         let terminal_data = current_node.state.is_terminal();
-        let terminal_value = terminal_data.value.unwrap();
         if terminal_data.is_terminal {
+            let terminal_value = terminal_data.value.unwrap();
             return MCTSData {
                 value: terminal_value,
                 policy: vec![normalize(terminal_value, -1, 1)]
@@ -86,7 +86,7 @@ fn recurse_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, node_index:
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
 
     // Neural network prediction
-    let nn_data;
+    let nn_data: NeuralNetworkData;
 
     // Calculate best node to visit
     let mut max_value = -1 as f32;
@@ -97,7 +97,7 @@ fn recurse_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, node_index:
     }
     {
         let current_node = g.index(node_index);
-        nn_data = predict(&current_node.state);
+        nn_data = predict(&current_node.state, children_indexes.len());
         for (i, child_index) in children_indexes.iter().enumerate() {
             let selection_node_value = calculate_selection_node_value(
                 current_node,
@@ -153,9 +153,21 @@ fn normalize(x: i32, min: i32, max: i32) -> u32 {
 }
 
 // TODO hook this up with neural net
-fn predict<T: State>(state: &T) -> NeuralNetworkData {
+//fn predict<T: State>(state: &T) -> NeuralNetworkData {
+//    NeuralNetworkData {
+//        value: 0,
+//        policy: Vec::new()
+//    }
+//}
+// TODO remove dummy function for testing
+fn predict<T: State>(_state: &T, num_elements: usize) -> NeuralNetworkData {
+    let mut policy = Vec::new();
+    for _ in 0..num_elements {
+        policy.push(0);
+    }
     NeuralNetworkData {
         value: 0,
-        policy: Vec::new()
+        policy
     }
 }
+

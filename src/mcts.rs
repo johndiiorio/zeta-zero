@@ -11,7 +11,7 @@ pub struct MCTSData<T> {
     best_state: Option<T>
 }
 
-struct Node<T> {
+struct Node<T: Clone> {
     state: T,
     num_visited: i32,
     value: i32,
@@ -31,15 +31,16 @@ struct RecursiveMCTSData {
 
 // Runs MCTS a given number of times from a root state
 // Returns the best state from a position
-pub fn run_mcts<T: State>(state: T, num_iterations: u32) -> MCTSData<T> {
+pub fn run_mcts<T: State + Clone>(state: T, num_iterations: u32) -> MCTSData<T> {
     let (mut g, root_index) = create_mcts_graph(state);
-    let mut recursive_mcts_data: RecursiveMCTSData;
+    let mut recursive_mcts_data: Option<RecursiveMCTSData> = None;
     for _ in 0..num_iterations {
-        recursive_mcts_data = recurse_mcts(&mut g, root_index);
+        recursive_mcts_data = Some(recurse_mcts(&mut g, root_index));
     }
+    let x = recursive_mcts_data.unwrap();
     MCTSData {
-        value: recursive_mcts_data.value,
-        policy: recursive_mcts_data.policy,
+        value: x.value,
+        policy: x.policy,
         best_state: most_visited_state(&g, root_index)
     }
 }
@@ -174,7 +175,7 @@ fn most_visited_state<T: State>(g: &Graph<Node<T>, u32, Directed>, node_index: N
         let curr_node = g.index(curr_node_index);
         if curr_node.num_visited > most_visited {
             most_visited = curr_node.num_visited;
-            most_visited_state = Some(curr_node.state);
+            most_visited_state = Some(curr_node.state.clone());
         }
     }
     most_visited_state

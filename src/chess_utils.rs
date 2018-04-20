@@ -1,9 +1,7 @@
 use chess::{MoveGen, Board, BoardStatus, Piece, Color};
 use traits::{State, Terminal};
 
-pub fn get_root_state() -> Board {
-    Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()
-}
+
 
 impl State for Board {
     fn get_legal_states(&self) -> Vec<Self> {
@@ -14,6 +12,10 @@ impl State for Board {
             states.push(board.make_move(chess_move));
         }
         states
+    }
+
+    fn get_root_state() -> Board {
+        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()
     }
 
     fn is_terminal(&self) -> Terminal {

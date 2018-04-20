@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::Read;
 use time::PreciseTime;
 use yaml_rust::{Yaml, YamlLoader};
+use chess::Board;
 
 fn parse_config(config_path: &str) -> Yaml {
     let mut f = File::open(config_path).expect("Config file not found");
@@ -24,7 +25,7 @@ fn main() {
     let start = PreciseTime::now();
     let config = parse_config("config.yml");
 
-    self_play::create_games(
+    self_play::create_games::<Board>(
         config["play"]["games_per_iteration"].as_i64().unwrap() as u32,
         config["play"]["mcts_per_move"].as_i64().unwrap() as u32,
     );

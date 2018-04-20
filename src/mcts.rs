@@ -23,7 +23,7 @@ struct MCTSData {
     policy: Vec<u32>,
 }
 
-pub fn run_mcts<T: State>(state: T, num_iterations: i32) {
+pub fn run_mcts<T: State>(state: T, num_iterations: u32) {
     let (mut g, root_index) = create_mcts_graph(state);
     for i in 0..num_iterations {
         let mcts_data = recurse_mcts(&mut g, root_index);

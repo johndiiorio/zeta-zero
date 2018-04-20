@@ -5,6 +5,7 @@ extern crate yaml_rust;
 
 mod chess_utils;
 mod mcts;
+mod self_play;
 mod traits;
 
 use std::fs::File;
@@ -21,11 +22,11 @@ fn parse_config(config_path: &str) -> Yaml {
 
 fn main() {
     let start = PreciseTime::now();
-
     let config = parse_config("config.yml");
-    mcts::run_mcts(
-        chess_utils::get_root_state(),
-        config["play"]["mcts_per_move"].as_i64().unwrap() as i32
+
+    self_play::create_games(
+        config["play"]["games_per_iteration"].as_i64().unwrap() as u32,
+        config["play"]["mcts_per_move"].as_i64().unwrap() as u32,
     );
 
     let end = PreciseTime::now();

@@ -6,9 +6,9 @@ use std::ops::IndexMut;
 use traits::{State};
 
 pub struct MCTSData<T> {
-    value: i32,
-    policy: Vec<u32>,
-    best_state: Option<T>
+    pub value: i32,
+    pub policy: Vec<u32>,
+    pub best_state: Option<T>
 }
 
 struct Node<T: Clone> {

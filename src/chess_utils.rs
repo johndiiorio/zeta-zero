@@ -1,8 +1,6 @@
 use chess::{MoveGen, Board, BoardStatus, Piece, Color};
 use traits::{State, Terminal};
 
-
-
 impl State for Board {
     fn get_legal_states(&self) -> Vec<Self> {
         let mut states: Vec<Board> = Vec::new();

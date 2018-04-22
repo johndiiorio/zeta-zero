@@ -8,8 +8,9 @@ pub fn create_games<T: State>(num_games: u32, mcts_per_move: u32) {
 }
 
 fn create_game<T: State>(mcts_per_move: u32) {
-    let mut state = T::get_root_state();
-    let (mut g, mut root_index) = mcts::create_mcts_graph(state);
+    let root_state = T::get_root_state();
+    let mut game_states = vec![root_state.clone()];
+    let (mut g, mut root_index) = mcts::create_mcts_graph(root_state);
 
     let mut count = 0;
     loop {
@@ -20,7 +21,7 @@ fn create_game<T: State>(mcts_per_move: u32) {
         println!("Moved at count: {} with nodes in graph: {}", count, g.node_count());
         count += 1;
         let best_state = mcts_data.best_state.unwrap();
-        state = best_state.state;
+        game_states.push(best_state.state);
         root_index = best_state.node_index;
     }
     println!("Finished one game with count: {}", count);

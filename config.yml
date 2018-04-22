@@ -1,6 +1,6 @@
 play:
   iterations: 1 # 10000
-  games_per_iteration: 2 # 25000
+  games_per_iteration: 1 # 25000
   mcts_per_move: 800
   resign_false_positive_check: 0.1
   dirichlet_alpha: 0.3

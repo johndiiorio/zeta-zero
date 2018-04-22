@@ -19,10 +19,15 @@ fn create_game<T: State>(mcts_per_move: u32) {
             break;
         }
         println!("Moved at count: {} with nodes in graph: {}", count, g.node_count());
-        count += 1;
         let best_state = mcts_data.best_state.unwrap();
+
+
+        mcts::remove_subtree_keep_index(&mut g, root_index, best_state.node_index);
+
+        // Update loop values
         game_states.push(best_state.state);
         root_index = best_state.node_index;
+        count += 1;
     }
     println!("Finished one game with count: {}", count);
 }

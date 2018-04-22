@@ -1,6 +1,6 @@
-use petgraph::{Graph, Direction};
+use petgraph::{Direction, Directed};
 use petgraph::graph::NodeIndex;
-use petgraph::Directed;
+use petgraph::stable_graph::StableGraph;
 use std::ops::Index;
 use std::ops::IndexMut;
 use traits::State;
@@ -36,7 +36,7 @@ struct RecursiveMCTSData {
 
 // Runs MCTS a given number of times from a root state
 // Returns the best state from a position
-pub fn run_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, root_index: NodeIndex, num_iterations: u32) -> MCTSData<T> {
+pub fn run_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex, num_iterations: u32) -> MCTSData<T> {
     let mut recursive_mcts_data: Option<RecursiveMCTSData> = None;
     for _ in 0..num_iterations {
         recursive_mcts_data = Some(recurse_mcts(&mut g, root_index));
@@ -50,13 +50,13 @@ pub fn run_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, root_index:
     }
 }
 
-pub fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, NodeIndex) {
-    let mut g = Graph::<Node<T>, u32, Directed>::new();
+pub fn create_mcts_graph<T: State>(state: T) -> (StableGraph<Node<T>, u32, Directed>, NodeIndex) {
+    let mut g = StableGraph::<Node<T>, u32, Directed>::new();
     let index = add_new_node(&mut g, None, state);
     (g, index)
 }
 
-fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<NodeIndex>, state: T) -> NodeIndex {
+fn add_new_node<T: State>(g: &mut StableGraph<Node<T>, u32, Directed>, parent: Option<NodeIndex>, state: T) -> NodeIndex {
     let index = g.add_node(Node {
         state: Box::new(state),
         num_visited: 0,
@@ -72,7 +72,7 @@ fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<
     index
 }
 
-fn recurse_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> RecursiveMCTSData {
+fn recurse_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, node_index: NodeIndex) -> RecursiveMCTSData {
     // Nodes in tree before additions
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
     let mut should_add_nodes = false;
@@ -178,7 +178,7 @@ fn normalize(x: i32, min: i32, max: i32) -> u32 {
     ((x - min) / (max - min)) as u32
 }
 
-fn most_visited_state<T: State>(g: &Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> Option<BestState<T>> {
+fn most_visited_state<T: State>(g: &StableGraph<Node<T>, u32, Directed>, node_index: NodeIndex) -> Option<BestState<T>> {
     let mut most_visited_count = -1;
     let mut most_visited_state = None;
     let mut most_visited_node_index = None;
@@ -215,6 +215,26 @@ fn predict<T: State>(_state: &T, num_elements: usize) -> NeuralNetworkData {
     NeuralNetworkData {
         value: 0,
         policy
+    }
+}
+
+pub fn remove_subtree_keep_index<T: State>(g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex, keep_index: NodeIndex) {
+    let children_indexes: Vec<NodeIndex> = g.neighbors_directed(root_index, Direction::Outgoing).collect();
+    for child_index in children_indexes {
+        if child_index != keep_index {
+            remove_subtree(g, child_index);
+        }
+    }
+}
+
+pub fn remove_subtree<T: State>(g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex) {
+    let children_indexes: Vec<NodeIndex> = g.neighbors_directed(root_index, Direction::Outgoing).collect();
+    if children_indexes.len() == 0 {
+        g.remove_node(root_index);
+    } else {
+        for child_index in children_indexes {
+            remove_subtree(g, child_index);
+        }
     }
 }
 

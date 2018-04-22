@@ -3,21 +3,21 @@ use petgraph::graph::NodeIndex;
 use petgraph::Directed;
 use std::ops::Index;
 use std::ops::IndexMut;
-use traits::{State};
+use traits::State;
 
-pub struct MCTSData<T> {
+pub struct MCTSData<T: State> {
     pub value: i32,
     pub policy: Vec<u32>,
     pub best_state: Option<BestState<T>>
 }
 
-pub struct BestState<T> {
+pub struct BestState<T: State> {
     pub state: T,
     pub node_index: NodeIndex
 }
 
-pub struct Node<T: Clone> {
-    state: T,
+pub struct Node<T: State + Clone> {
+    state: Box<T>,
     num_visited: i32,
     value: i32,
     policy: Vec<u32>
@@ -42,7 +42,7 @@ pub fn run_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, root_index:
         recursive_mcts_data = Some(recurse_mcts(&mut g, root_index));
     }
     let unwrapped_mcts_data = recursive_mcts_data.unwrap();
-    let most_visited = most_visited_state(&g, root_index);
+    let most_visited = most_visited_state(g, root_index);
     MCTSData {
         value: unwrapped_mcts_data.value,
         policy: unwrapped_mcts_data.policy,
@@ -57,7 +57,12 @@ pub fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, 
 }
 
 fn add_new_node<T: State>(g: &mut Graph<Node<T>, u32, Directed>, parent: Option<NodeIndex>, state: T) -> NodeIndex {
-    let index = g.add_node(Node {state, num_visited: 0, value: 0, policy: Vec::new() });
+    let index = g.add_node(Node {
+        state: Box::new(state),
+        num_visited: 0,
+        value: 0,
+        policy: Vec::new()
+    });
     match parent {
         None => {},
         Some(e) => {
@@ -118,7 +123,7 @@ fn recurse_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, node_index:
     }
     {
         let current_node = g.index(node_index);
-        nn_data = predict(&current_node.state, children_indexes.len());
+        nn_data = predict(&*current_node.state, children_indexes.len());
         for (i, child_index) in children_indexes.iter().enumerate() {
             let selection_node_value = calculate_selection_node_value(
                 current_node,
@@ -189,7 +194,7 @@ fn most_visited_state<T: State>(g: &Graph<Node<T>, u32, Directed>, node_index: N
         return None
     }
     Some(BestState {
-        state: most_visited_state.unwrap(),
+        state: *most_visited_state.unwrap(),
         node_index: most_visited_node_index.unwrap()
     })
 }

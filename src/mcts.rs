@@ -8,10 +8,15 @@ use traits::{State};
 pub struct MCTSData<T> {
     pub value: i32,
     pub policy: Vec<u32>,
-    pub best_state: Option<T>
+    pub best_state: Option<BestState<T>>
 }
 
-struct Node<T: Clone> {
+pub struct BestState<T> {
+    pub state: T,
+    pub node_index: NodeIndex
+}
+
+pub struct Node<T: Clone> {
     state: T,
     num_visited: i32,
     value: i32,
@@ -31,21 +36,21 @@ struct RecursiveMCTSData {
 
 // Runs MCTS a given number of times from a root state
 // Returns the best state from a position
-pub fn run_mcts<T: State + Clone>(state: T, num_iterations: u32) -> MCTSData<T> {
-    let (mut g, root_index) = create_mcts_graph(state);
+pub fn run_mcts<T: State>(mut g: &mut Graph<Node<T>, u32, Directed>, root_index: NodeIndex, num_iterations: u32) -> MCTSData<T> {
     let mut recursive_mcts_data: Option<RecursiveMCTSData> = None;
     for _ in 0..num_iterations {
         recursive_mcts_data = Some(recurse_mcts(&mut g, root_index));
     }
-    let x = recursive_mcts_data.unwrap();
+    let unwrapped_mcts_data = recursive_mcts_data.unwrap();
+    let most_visited = most_visited_state(&g, root_index);
     MCTSData {
-        value: x.value,
-        policy: x.policy,
-        best_state: most_visited_state(&g, root_index)
+        value: unwrapped_mcts_data.value,
+        policy: unwrapped_mcts_data.policy,
+        best_state: most_visited
     }
 }
 
-fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, NodeIndex) {
+pub fn create_mcts_graph<T: State>(state: T) -> (Graph<Node<T>, u32, Directed>, NodeIndex) {
     let mut g = Graph::<Node<T>, u32, Directed>::new();
     let index = add_new_node(&mut g, None, state);
     (g, index)
@@ -168,17 +173,25 @@ fn normalize(x: i32, min: i32, max: i32) -> u32 {
     ((x - min) / (max - min)) as u32
 }
 
-fn most_visited_state<T: State>(g: &Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> Option<T> {
-    let mut most_visited = -1;
+fn most_visited_state<T: State>(g: &Graph<Node<T>, u32, Directed>, node_index: NodeIndex) -> Option<BestState<T>> {
+    let mut most_visited_count = -1;
     let mut most_visited_state = None;
+    let mut most_visited_node_index = None;
     for curr_node_index in g.neighbors_directed(node_index, Direction::Outgoing) {
         let curr_node = g.index(curr_node_index);
-        if curr_node.num_visited > most_visited {
-            most_visited = curr_node.num_visited;
+        if curr_node.num_visited > most_visited_count {
+            most_visited_count = curr_node.num_visited;
             most_visited_state = Some(curr_node.state.clone());
+            most_visited_node_index = Some(curr_node_index);
         }
     }
-    most_visited_state
+    if most_visited_state.is_none() || most_visited_node_index.is_none() {
+        return None
+    }
+    Some(BestState {
+        state: most_visited_state.unwrap(),
+        node_index: most_visited_node_index.unwrap()
+    })
 }
 
 // TODO hook this up with neural net

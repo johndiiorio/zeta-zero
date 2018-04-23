@@ -21,7 +21,6 @@ fn create_game<T: State>(mcts_per_move: u32) {
         println!("Moved at count: {} with nodes in graph: {}", count, g.node_count());
         let best_state = mcts_data.best_state.unwrap();
 
-
         mcts::remove_subtree_keep_index(&mut g, root_index, best_state.node_index);
 
         // Update loop values

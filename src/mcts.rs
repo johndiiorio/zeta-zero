@@ -32,16 +32,22 @@ struct NeuralNetworkData {
 struct RecursiveMCTSData {
     value: i32,
     policy: Vec<u32>,
+    terminal: bool
 }
 
 // Runs MCTS a given number of times from a root state
 // Returns the best state from a position
 pub fn run_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex, num_iterations: u32) -> MCTSData<T> {
-    let mut recursive_mcts_data: Option<RecursiveMCTSData> = None;
+    let mut option_recursive_data: Option<RecursiveMCTSData> = None;
     for _ in 0..num_iterations {
-        recursive_mcts_data = Some(recurse_mcts(&mut g, root_index));
+        let recursive_mcts_data = recurse_mcts(&mut g, root_index);
+        let reached_terminal_position = recursive_mcts_data.terminal;
+        option_recursive_data = Some(recursive_mcts_data);
+        if reached_terminal_position {
+            break
+        }
     }
-    let unwrapped_mcts_data = recursive_mcts_data.unwrap();
+    let unwrapped_mcts_data = option_recursive_data.unwrap();
     let most_visited = most_visited_state(g, root_index);
     MCTSData {
         value: unwrapped_mcts_data.value,
@@ -87,7 +93,8 @@ fn recurse_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, node_
             let terminal_value = terminal_data.value.unwrap();
             return RecursiveMCTSData {
                 value: terminal_value,
-                policy: vec![normalize(terminal_value, -1, 1)]
+                policy: vec![normalize(terminal_value, -1, 1)],
+                terminal: true
             }
         }
 
@@ -149,7 +156,8 @@ fn recurse_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, node_
             // Leaf node, don't recurse, backpropagate values
             return RecursiveMCTSData {
                 value: nn_data.value,
-                policy: nn_data.policy
+                policy: nn_data.policy,
+                terminal: false
             };
         }
     } else {

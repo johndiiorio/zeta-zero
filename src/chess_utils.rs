@@ -13,13 +13,13 @@ impl State for Board {
     }
 
     fn get_root_state() -> Board {
-        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()
+//        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()
+        Board::from_fen("7k/5K2/8/6R1/8/8/8/8 w - - 0 1".to_string()).unwrap()
     }
 
     fn is_terminal(&self) -> Terminal {
         let status = self.status();
         let is_drawn = status == BoardStatus::Stalemate || game_drawn(*self);
-
         if status == BoardStatus::Ongoing && !is_drawn {
             return Terminal {
                 is_terminal: false,

@@ -1,20 +1,23 @@
-use chess::{MoveGen, Board, BoardStatus, Piece, Color};
-use traits::{State, Terminal};
+use chess::{MoveGen, BoardStatus, Piece, Color};
+use chess::Board;
+use super::traits::{State, Terminal};
 
 impl State for Board {
     fn get_legal_states(&self) -> Vec<Self> {
         let mut states: Vec<Board> = Vec::new();
-        let move_gen_iter: MoveGen = MoveGen::new(*self, true);
+        let move_gen_iter: MoveGen = MoveGen::new_legal(self);
         for chess_move in move_gen_iter {
             let board = self.clone();
-            states.push(board.make_move(chess_move));
+            states.push(board.make_move_new(chess_move));
         }
         states
     }
 
     fn get_root_state() -> Board {
-//        Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap()
-        Board::from_fen("7k/5K2/8/6R1/8/8/8/8 w - - 0 1".to_string()).unwrap()
+		// TODO remove testing FEN
+		// Board::default()
+		// Board::from_fen("7k/5K2/8/6R1/8/8/8/8 w - - 0 1".to_string()).unwrap()
+		Board::from_fen("kr2N1b1/5pP1/K4P2/7r/8/8/1r6/8 w - -".to_string()).unwrap()
     }
 
     fn is_terminal(&self) -> Terminal {

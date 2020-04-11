@@ -1,8 +1,3 @@
-extern crate chess;
-extern crate petgraph;
-extern crate time;
-extern crate yaml_rust;
-
 mod chess_utils;
 mod mcts;
 mod self_play;

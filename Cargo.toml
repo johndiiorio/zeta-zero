@@ -2,9 +2,11 @@
 name = "zeta_zero"
 version = "0.1.0"
 authors = ["John DiIorio <johnzdiiorio@gmail.com>"]
+edition = "2018"
 
 [dependencies]
-chess = "0.4.2"
+chess = "3.1.1"
 petgraph = "0.4.12"
 time = "0.1.39"
 yaml-rust = "0.4.0"
+rand = "0.7.0"

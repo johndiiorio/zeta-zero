@@ -1,9 +1,11 @@
+use std::ops::Index;
+use std::ops::IndexMut;
+
 use petgraph::{Direction, Directed};
 use petgraph::graph::NodeIndex;
 use petgraph::stable_graph::StableGraph;
-use std::ops::Index;
-use std::ops::IndexMut;
-use traits::State;
+
+use super::traits::State;
 
 pub struct MCTSData<T: State> {
     pub value: i32,
@@ -83,12 +85,9 @@ fn recurse_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, node_
     let children_before_addition: Vec<NodeIndex> = g.neighbors_directed(node_index, Direction::Outgoing).collect();
     let mut should_add_nodes = false;
     {
-        // Return data if current node is terminal
         let current_node = g.index_mut(node_index);
-        if current_node.num_visited == 0 {
-            should_add_nodes = true;
-        }
         let terminal_data = current_node.state.is_terminal();
+        // Return data if current node is terminal
         if terminal_data.is_terminal {
             let terminal_value = terminal_data.value.unwrap();
             return RecursiveMCTSData {
@@ -96,6 +95,9 @@ fn recurse_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, node_
                 policy: vec![normalize(terminal_value, -1, 1)],
                 terminal: true
             }
+        }
+		if current_node.num_visited == 0 {
+            should_add_nodes = true;
         }
 
         // Always increment the number of times that the current node was visited
@@ -218,7 +220,7 @@ fn most_visited_state<T: State>(g: &StableGraph<Node<T>, u32, Directed>, node_in
 fn predict<T: State>(_state: &T, num_elements: usize) -> NeuralNetworkData {
     let mut policy = Vec::new();
     for _ in 0..num_elements {
-        policy.push(0);
+        policy.push(1);
     }
     NeuralNetworkData {
         value: 0,
@@ -235,7 +237,7 @@ pub fn remove_subtree_keep_index<T: State>(g: &mut StableGraph<Node<T>, u32, Dir
     }
 }
 
-pub fn remove_subtree<T: State>(g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex) {
+fn remove_subtree<T: State>(g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex) {
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(root_index, Direction::Outgoing).collect();
     if children_indexes.len() == 0 {
         g.remove_node(root_index);

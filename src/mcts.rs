@@ -178,7 +178,7 @@ fn recurse_mcts<T: State>(mut g: &mut StableGraph<Node<T>, u32, Directed>, node_
 
 fn calculate_selection_node_value<T: State>(current_node: &Node<T>, child_node: &Node<T>, total_children_visits: i32, policy_value: u32) -> f32 {
     let exploitation = (current_node.value / current_node.num_visited) as f32;
-    let c = (2 as f32).sqrt();
+    let c = 2_f32.sqrt();
     let exploration = (total_children_visits as f32).sqrt() / (1 + child_node.num_visited) as f32;
     exploitation + c * (policy_value as f32) * exploration
 }
@@ -239,7 +239,7 @@ pub fn remove_subtree_keep_index<T: State>(g: &mut StableGraph<Node<T>, u32, Dir
 
 fn remove_subtree<T: State>(g: &mut StableGraph<Node<T>, u32, Directed>, root_index: NodeIndex) {
     let children_indexes: Vec<NodeIndex> = g.neighbors_directed(root_index, Direction::Outgoing).collect();
-    if children_indexes.len() == 0 {
+    if children_indexes.is_empty() {
         g.remove_node(root_index);
     } else {
         for child_index in children_indexes {

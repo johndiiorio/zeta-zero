@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use super::traits::State;
 use super::mcts;
 
@@ -10,7 +9,7 @@ pub fn create_games<T: State>(num_games: u32, mcts_per_move: u32) {
 
 fn create_game<T: State>(mcts_per_move: u32) {
     let root_state = T::get_root_state();
-    let legal_states = root_state.get_legal_states();
+    // let legal_states = root_state.get_legal_states();
     let mut game_states = vec![root_state.clone()];
     let (mut g, mut root_index) = mcts::create_mcts_graph(root_state);
 

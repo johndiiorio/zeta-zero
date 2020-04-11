@@ -1,5 +1,6 @@
 use chess::{MoveGen, BoardStatus, Piece, Color};
 use chess::Board;
+use std::str::FromStr;
 use super::traits::{State, Terminal};
 
 impl State for Board {
@@ -7,7 +8,7 @@ impl State for Board {
         let mut states: Vec<Board> = Vec::new();
         let move_gen_iter: MoveGen = MoveGen::new_legal(self);
         for chess_move in move_gen_iter {
-            let board = self.clone();
+            let board = *self;
             states.push(board.make_move_new(chess_move));
         }
         states
@@ -16,8 +17,8 @@ impl State for Board {
     fn get_root_state() -> Board {
 		// TODO remove testing FEN
 		// Board::default()
-		// Board::from_fen("7k/5K2/8/6R1/8/8/8/8 w - - 0 1".to_string()).unwrap()
-		Board::from_fen("kr2N1b1/5pP1/K4P2/7r/8/8/1r6/8 w - -".to_string()).unwrap()
+        // Board::from_str("7k/5K2/8/6R1/8/8/8/8 w - - 0 1").unwrap()
+		Board::from_str("kr2N1b1/5pP1/K4P2/7r/8/8/1r6/8 w - -").unwrap()
     }
 
     fn is_terminal(&self) -> Terminal {
